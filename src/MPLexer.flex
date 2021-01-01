@@ -10,11 +10,18 @@ import java_cup.runtime.*;
 
 %line
 %column
-%debug
+//%debug
 
 %eofval{
 	return new Symbol( sym.EOF );
 %eofval}
+
+%{
+   public int getLine()
+   {
+      return yyline;
+   }
+%}
 
 //stanja
 %xstate KOMENTAR

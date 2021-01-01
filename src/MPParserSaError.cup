@@ -1,0 +1,238 @@
+//import section
+
+import java_cup.runtime.*;
+import java.io.*;
+
+parser code {:
+
+   public int errNo = 0;
+
+   public static void main( String[] args )
+   {
+      try
+	  {
+		   FileReader file = new FileReader( args[0] );
+		   Scanner scanner = new MPLexer( file );
+		   MPParser parser = new MPParser( scanner );
+		   parser.parse();
+	  }
+	  catch( Exception e )
+	  {
+		   e.printStackTrace();
+	  }
+   }
+
+   public void syntax_error(Symbol cur_token)
+   {
+   	  
+   }
+   
+   public void report_error(String message, Object info)
+   {
+   	   System.out.print( message );
+   }
+   
+   public int getLine()
+   {
+   	  return ((MPLexer) getScanner()).getLine();
+   }
+:};
+
+
+//Terminal symbols
+terminal MAIN, LEFTPAR, RIGHTPAR, LEFTCURLY, RIGHTCURLY, ID, SEMICOLON, INT, REAL, BOOL;
+terminal IF, ELIF, ELSE, CONST, COLON, ASSIGN, LESS, LESSEQ, EQ, NOTEQ, GREATER, GREATEREQ;
+
+//Nonterminal symbols
+non terminal Program, Block, Variables, Variable, Type, Statements, Statement, IfStatement;
+non terminal ElsePart, ElifList, Elif, ElseStatement, RelExpression, Term, RelOp, Assignment;
+
+
+
+
+//Grammar
+Program ::= MAIN LEFTPAR RIGHTPAR Block
+		  | MAIN LEFTPAR RIGHTPAR error
+            {:
+               System.out.println("Nedostaje blok glavnog programa.");
+			   parser.errNo++;
+            :}
+          | MAIN LEFTPAR error
+            {:
+               System.out.println(parser.getLine() + ": " + "Nedostaje ')'");
+			   parser.errNo++;
+            :}
+          | MAIN error
+            {:
+               System.out.println(parser.getLine() + ": " + "Nedostaje '('");
+			   parser.errNo++;
+            :}
+          | error
+            {:
+               System.out.println(parser.getLine() + ": " + "Nedostaje 'main'");
+			   parser.errNo++;
+            :};
+
+Block ::= LEFTCURLY Variables Statements RIGHTCURLY
+        | LEFTCURLY Variables Statements error
+          {:
+              System.out.println(parser.getLine() + ": " + "Nedostaje '}' na kraju bloka naredbi");
+			  parser.errNo++;
+          :}
+        | LEFTCURLY Variables error
+          {:
+              System.out.println(parser.getLine() + ": " + "Nedostaje blok naredbi");
+			  parser.errNo++;
+          :}
+        | LEFTCURLY error
+          {:
+              System.out.println(parser.getLine() + ": " + "Nedostaje deklaracija promenljivih");
+			  parser.errNo++;
+          :};
+
+Variables ::= Variables Variable
+            | Variable
+            ;
+
+Variable ::= Type ID SEMICOLON
+           | Type ID error
+             {:
+                System.out.println(parser.getLine() + ": " + "Nedostaje ';' nakon naziva identifikatora");
+			    parser.errNo++;
+             :}
+           | Type error
+             {:
+                System.out.println(parser.getLine() + ": " + "Nedostaje naziv identifikatora");
+			    parser.errNo++;
+             :};
+
+Type ::= INT
+       | REAL
+       | BOOL
+	   ;
+
+Statements ::= Statements SEMICOLON Statement 
+             | Statements SEMICOLON error  
+	           {:
+           	      System.out.println(parser.getLine() + ": " + "Nedostaje poslednja naredba");
+			      parser.errNo++;
+       	       :}
+      		 | Statement
+             ;
+
+Statement ::= Assignment
+            | IfStatement
+            ;
+
+IfStatement ::= IF LEFTPAR RelExpression RIGHTPAR COLON Block ElsePart 
+              | IF LEFTPAR RelExpression RIGHTPAR COLON error
+                {:
+           	       System.out.println(parser.getLine() + ": " + "Nedostaje 'then' blok");
+			       parser.errNo++;
+       	        :}
+       	      | IF LEFTPAR RelExpression RIGHTPAR error
+                {:
+           	       System.out.println(parser.getLine() + ": " + "Nedostaje ':' za pocetak 'then' bloka");
+			       parser.errNo++;
+       	        :}
+       	      | IF LEFTPAR RelExpression error
+                {:
+           	       System.out.println(parser.getLine() + ": " + "Nedostaje ')'");
+			       parser.errNo++;
+       	        :}
+       	      | IF LEFTPAR error
+                {:
+           	       System.out.println(parser.getLine() + ": " + "Nedostaje relacioni izraz u 'if' naredbi");
+			       parser.errNo++;
+       	        :}
+       	      | IF error
+                {:
+           	       System.out.println(parser.getLine() + ": " + "Nedostaje '(' za pocetak 'if' naredbe");
+			       parser.errNo++;
+       	        :}
+              ;
+
+ElsePart ::= ElifList
+          | ElseStatement 
+          | 
+          ;
+
+ElifList ::= ElifList Elif
+   		   | Elif 
+	       | ElifList ElseStatement
+	       ;
+
+Elif ::= ELIF LEFTPAR RelExpression RIGHTPAR COLON Block
+       | ELIF LEFTPAR RelExpression RIGHTPAR COLON error
+         {:
+            System.out.println(parser.getLine() + ": " + "Nedostaje 'then' blok");
+		    parser.errNo++;
+       	 :}
+       | ELIF LEFTPAR RelExpression RIGHTPAR error
+         {:
+            System.out.println(parser.getLine() + ": " + "Nedostaje ':' za pocetak 'then' bloka");
+		    parser.errNo++;
+       	 :}
+       | ELIF LEFTPAR RelExpression error
+         {:
+            System.out.println(parser.getLine() + ": " + "Nedostaje ')'");
+			parser.errNo++;
+       	 :}
+       | ELIF LEFTPAR error
+         {:
+            System.out.println(parser.getLine() + ": " + "Nedostaje relacioni izraz u 'elif' naredbi");
+			parser.errNo++;
+       	 :}
+       | ELIF error
+         {:
+            System.out.println(parser.getLine() + ": " + "Nedostaje '(' za pocetak 'elif' naredbe");
+			parser.errNo++;
+       	 :}
+       ;
+
+ElseStatement ::= ELSE COLON Block
+ 				| ELSE COLON error
+ 				  {:
+                     System.out.println(parser.getLine() + ": " + "Nedostaje 'else' blok naredbi");
+			         parser.errNo++;
+       	          :}
+       	        | ELSE error
+ 				  {:
+                     System.out.println(parser.getLine() + ": " + "Nedostaje ':' za pocetak 'else' bloka");
+			         parser.errNo++;
+       	          :} 
+            	;
+
+RelExpression ::= Term RelOp Term 
+				| Term RelOp error
+				  {:
+                     System.out.println(parser.getLine() + ": " + "Nedostaje drugi operand u relacionom izrazu");
+			         parser.errNo++;
+       	          :} 
+        		| Term
+        		;
+
+Term ::= ID
+       | CONST
+       ;
+
+RelOp ::= LESS
+	    | LESSEQ
+	    | EQ 
+	    | NOTEQ 
+	    | GREATER 
+	    | GREATEREQ 
+	    ;
+	    
+Assignment ::= ID ASSIGN Term
+             | ID ASSIGN error
+               {:
+                  System.out.println(parser.getLine() + ": " + "Nedostaje desna strana operatora dodele");
+			      parser.errNo++;
+       	       :} 
+       	     | ID error
+               {:
+                  System.out.println(parser.getLine() + ": " + "Nedostaje operator dodele ':='");
+			      parser.errNo++;
+       	       :}
+             ;
