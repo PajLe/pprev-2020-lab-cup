@@ -101,13 +101,14 @@ class MPLexer implements java_cup.runtime.Scanner {
   private static final String ZZ_ACTION_PACKED_0 =
     "\2\0\1\1\1\2\1\1\1\3\1\4\1\1\12\5"+
     "\1\6\1\7\1\10\1\1\1\11\10\12\1\13\1\14"+
-    "\1\0\1\5\1\0\10\5\10\0\1\15\1\16\1\17"+
-    "\1\20\1\21\3\12\1\22\4\12\1\23\1\24\10\0"+
-    "\10\5\4\12\1\25\3\12\1\0\6\5\1\12\1\26"+
-    "\1\27\1\30\1\31\1\5\2\12\1\32";
+    "\1\0\1\5\1\0\1\15\7\5\10\0\1\16\1\17"+
+    "\1\20\1\21\1\22\3\12\1\23\4\12\1\24\1\25"+
+    "\10\0\10\5\4\12\1\26\3\12\1\0\6\5\1\12"+
+    "\1\27\1\30\1\12\1\31\1\32\1\33\1\12\1\34"+
+    "\1\12\1\35";
 
   private static int [] zzUnpackAction() {
-    int [] result = new int[107];
+    int [] result = new int[109];
     int offset = 0;
     offset = zzUnpackAction(ZZ_ACTION_PACKED_0, offset, result);
     return result;
@@ -144,11 +145,11 @@ class MPLexer implements java_cup.runtime.Scanner {
     "\0\u0a77\0\u0aa6\0\215\0\u06cb\0\u06fa\0\u0729\0\u0758\0\u0787"+
     "\0\u07b6\0\u07e5\0\u0814\0\u0ad5\0\u0b04\0\u0b33\0\u0b62\0\u037d"+
     "\0\u0b91\0\u0bc0\0\u0bef\0\u0c1e\0\u09bb\0\u09ea\0\u0a19\0\u0a48"+
-    "\0\u0a77\0\u0aa6\0\u0c4d\0\u037d\0\u037d\0\u037d\0\u037d\0\u037d"+
-    "\0\u0c7c\0\u0cab\0\u037d";
+    "\0\u0a77\0\u0aa6\0\u0c4d\0\u037d\0\u037d\0\u0c7c\0\u037d\0\u037d"+
+    "\0\u037d\0\u0cab\0\u037d\0\u0cda\0\u037d";
 
   private static int [] zzUnpackRowMap() {
-    int [] result = new int[107];
+    int [] result = new int[109];
     int offset = 0;
     offset = zzUnpackRowMap(ZZ_ROWMAP_PACKED_0, offset, result);
     return result;
@@ -211,15 +212,16 @@ class MPLexer implements java_cup.runtime.Scanner {
     "\12\141\5\0\4\141\34\0\12\142\5\0\5\142\33\0"+
     "\12\30\5\0\14\30\1\143\7\30\14\0\12\30\5\0"+
     "\12\30\1\144\11\30\14\0\12\30\5\0\11\30\1\145"+
-    "\12\30\14\0\12\30\5\0\21\30\1\133\2\30\14\0"+
-    "\12\30\5\0\16\30\1\146\5\30\14\0\12\30\5\0"+
-    "\14\30\1\147\7\30\14\0\12\30\5\0\11\30\1\150"+
-    "\12\30\14\0\12\45\45\0\12\30\5\0\11\30\1\151"+
-    "\12\30\14\0\12\30\5\0\7\30\1\152\14\30\14\0"+
-    "\12\30\5\0\16\30\1\153\5\30\2\0";
+    "\12\30\14\0\12\30\5\0\21\30\1\146\2\30\14\0"+
+    "\12\30\5\0\16\30\1\147\5\30\14\0\12\30\5\0"+
+    "\14\30\1\150\7\30\14\0\12\30\5\0\11\30\1\151"+
+    "\12\30\14\0\12\45\45\0\12\30\5\0\11\30\1\152"+
+    "\12\30\14\0\12\30\5\0\11\30\1\153\12\30\14\0"+
+    "\12\30\5\0\7\30\1\154\14\30\14\0\12\30\5\0"+
+    "\16\30\1\155\5\30\2\0";
 
   private static int [] zzUnpackTrans() {
-    int [] result = new int[3290];
+    int [] result = new int[3337];
     int offset = 0;
     offset = zzUnpackTrans(ZZ_TRANS_PACKED_0, offset, result);
     return result;
@@ -264,10 +266,10 @@ class MPLexer implements java_cup.runtime.Scanner {
   private static final String ZZ_ATTRIBUTE_PACKED_0 =
     "\2\0\2\11\1\1\2\11\14\1\1\11\13\1\2\11"+
     "\1\0\1\1\1\0\10\1\10\0\5\11\10\1\2\11"+
-    "\10\0\20\1\1\0\17\1";
+    "\10\0\20\1\1\0\21\1";
 
   private static int [] zzUnpackAttribute() {
-    int [] result = new int[107];
+    int [] result = new int[109];
     int offset = 0;
     offset = zzUnpackAttribute(ZZ_ATTRIBUTE_PACKED_0, offset, result);
     return result;
@@ -348,6 +350,49 @@ class MPLexer implements java_cup.runtime.Scanner {
    {
       return yyline;
    }
+   
+   public int convertToBase10(String text) {
+        if (text.length() == 0) return -1;
+        StringBuilder baseStr = new StringBuilder();
+        StringBuilder numberStr = new StringBuilder();
+       
+        int base;
+        if (text.contains("#")) {
+            if (text.charAt(0) == '#') {
+                baseStr.append(text.charAt(0));
+                for (int i = 1; i < text.length(); i++)
+                    numberStr.append(text.charAt(i));
+            }
+            else {
+                for (int i = 0; text.charAt(i) != '#'; i++)
+                    baseStr.append(text.charAt(i));
+                
+                for (int i = baseStr.length() + 1; i < text.length(); i++)
+                    numberStr.append(text.charAt(i));
+            }
+        }
+        else
+            for (int i = 0; i < text.length(); i++)
+                numberStr.append(text.charAt(i));
+        
+        if (baseStr.length() > 0) {
+            if (baseStr.length() == 1 && baseStr.charAt(0) == '#')
+                base = 16;
+            else
+                base = Integer.parseInt(baseStr.toString());
+        }
+        else
+            base = 10;
+        
+        int number = 0;
+        int expt = 0;
+        for (int i = numberStr.length() - 1; i >= 0; i--) {
+            number += Character.getNumericValue(numberStr.charAt(i)) * Math.pow(base, expt);
+            expt++;
+        }
+        
+        return number;
+    }
 
 
   /**
@@ -760,132 +805,148 @@ class MPLexer implements java_cup.runtime.Scanner {
             { if (yytext() != null && yytext().length() > 0) return new Symbol( sym.error );
             }
             // fall through
-          case 27: break;
+          case 30: break;
           case 2:
             { ;
             }
             // fall through
-          case 28: break;
+          case 31: break;
           case 3:
             { return new Symbol( sym.LEFTPAR 	);
             }
             // fall through
-          case 29: break;
+          case 32: break;
           case 4:
             { return new Symbol( sym.RIGHTPAR 	);
             }
             // fall through
-          case 30: break;
+          case 33: break;
           case 5:
-            { return new Symbol( sym.CONST );
+            { int number = convertToBase10(yytext());
+	return new Symbol( sym.INTCONST, new Integer(number) );
             }
             // fall through
-          case 31: break;
+          case 34: break;
           case 6:
             { return new Symbol( sym.COLON 		);
             }
             // fall through
-          case 32: break;
+          case 35: break;
           case 7:
             { return new Symbol( sym.SEMICOLON 	);
             }
             // fall through
-          case 33: break;
+          case 36: break;
           case 8:
             { return new Symbol( sym.LESS 		);
             }
             // fall through
-          case 34: break;
+          case 37: break;
           case 9:
             { return new Symbol( sym.GREATER 	);
             }
             // fall through
-          case 35: break;
+          case 38: break;
           case 10:
-            { return new Symbol(sym.ID );
+            { return new Symbol(sym.ID, yyline, yytext());
             }
             // fall through
-          case 36: break;
+          case 39: break;
           case 11:
             { return new Symbol( sym.LEFTCURLY 	);
             }
             // fall through
-          case 37: break;
+          case 40: break;
           case 12:
             { return new Symbol( sym.RIGHTCURLY 	);
             }
             // fall through
-          case 38: break;
-          case 13:
-            { return new Symbol( sym.ASSIGN 	);
-            }
-            // fall through
-          case 39: break;
-          case 14:
-            { return new Symbol( sym.LESSEQ 	);
-            }
-            // fall through
-          case 40: break;
-          case 15:
-            { return new Symbol( sym.NOTEQ 		);
-            }
-            // fall through
           case 41: break;
-          case 16:
-            { return new Symbol( sym.EQ 		);
+          case 13:
+            { return new Symbol( sym.REALCONST, new Double(yytext()) );
             }
             // fall through
           case 42: break;
-          case 17:
-            { return new Symbol( sym.GREATEREQ 	);
+          case 14:
+            { return new Symbol( sym.ASSIGN 	);
             }
             // fall through
           case 43: break;
-          case 18:
-            { return new Symbol( sym.IF 		);
+          case 15:
+            { return new Symbol( sym.LESSEQ 	);
             }
             // fall through
           case 44: break;
-          case 19:
-            { yybegin( YYINITIAL 	);
+          case 16:
+            { return new Symbol( sym.NOTEQ 		);
             }
             // fall through
           case 45: break;
-          case 20:
-            { yybegin( KOMENTAR 	);
+          case 17:
+            { return new Symbol( sym.EQ 		);
             }
             // fall through
           case 46: break;
-          case 21:
-            { return new Symbol( sym.INT 		);
+          case 18:
+            { return new Symbol( sym.GREATEREQ 	);
             }
             // fall through
           case 47: break;
-          case 22:
-            { return new Symbol( sym.ELIF 		);
+          case 19:
+            { return new Symbol( sym.IF 		);
             }
             // fall through
           case 48: break;
-          case 23:
-            { return new Symbol( sym.ELSE 		);
+          case 20:
+            { yybegin( YYINITIAL 	);
             }
             // fall through
           case 49: break;
-          case 24:
-            { return new Symbol( sym.MAIN 		);
+          case 21:
+            { yybegin( KOMENTAR 	);
             }
             // fall through
           case 50: break;
-          case 25:
-            { return new Symbol( sym.REAL 		);
+          case 22:
+            { return new Symbol( sym.INT 		);
             }
             // fall through
           case 51: break;
-          case 26:
-            { return new Symbol( sym.BOOL	 	);
+          case 23:
+            { return new Symbol( sym.ELIF 		);
             }
             // fall through
           case 52: break;
+          case 24:
+            { return new Symbol( sym.ELSE 		);
+            }
+            // fall through
+          case 53: break;
+          case 25:
+            { return new Symbol( sym.MAIN 		);
+            }
+            // fall through
+          case 54: break;
+          case 26:
+            { return new Symbol( sym.REAL 		);
+            }
+            // fall through
+          case 55: break;
+          case 27:
+            { return new Symbol( sym.BOOLCONST, new Boolean("true"));
+            }
+            // fall through
+          case 56: break;
+          case 28:
+            { return new Symbol( sym.BOOLCONST, new Boolean("false"));
+            }
+            // fall through
+          case 57: break;
+          case 29:
+            { return new Symbol( sym.BOOL	 	);
+            }
+            // fall through
+          case 58: break;
           default:
             zzScanError(ZZ_NO_MATCH);
         }

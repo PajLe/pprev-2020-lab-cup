@@ -90,12 +90,20 @@ public class Symbol {
  *******************************/
 
   public int left, right;
+  public int line;
   public Object value;
 
   /*****************************
     Printing this token out. (Override for pretty-print).
     ****************************/
   public String toString() { return "#"+sym; }
+  
+  public Symbol( int sym_num, int cur_line, Object sym_value )
+  {
+	  sym = sym_num;
+	  line = cur_line;
+	  value = sym_value;
+  }
 }
 
 

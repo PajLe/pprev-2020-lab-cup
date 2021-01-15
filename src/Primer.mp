@@ -1,14 +1,14 @@
 main()
 {
-	int a;
 	real b;
+	int a;
 	boolean c;
 	a := 3;
 	c := false;
-	if (a > b) :
+	if (c) :
 	{
 		int g;
 		b := a
 	}
-	/**asd*/
+	
 }
