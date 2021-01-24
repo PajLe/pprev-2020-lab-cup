@@ -3,73 +3,15 @@
 import java_cup.runtime.*;
 import java.io.*;
 import java.util.*;
+import AST.*;
 
 import SymbolTable.*;
 
 
 parser code {:
-   public int errNo = 0;
-   public int warnNo = 0;
    
    SymbolTable symbolTable;
    
-   public static void main( String[] args )
-   {
-      try
-	  {
-		   FileReader file = new FileReader( args[0] );
-		   java_cup.runtime.Scanner scanner = new MPLexer( file );
-		   MPParser parser = new MPParser( scanner );
-		   parser.parse();
-		   parser.checkWarnings();
-		   if ( parser.errNo == 0 && parser.warnNo == 0 )
-		      System.out.println( "Analiza zavrsena. U kodu nema gresaka." );
-		   else
-		      System.out.println( "Analiza zavrsena. Broj gresaka: " + parser.errNo 
-		         + " Broj upozorenja: " + parser.warnNo );
-	  }
-	  catch( Exception e )
-	  {
-		   System.out.println(e);
-	  }
-   }
-   
-   public void checkWarnings()
-   {
-      SymbolNode current = symbolTable.getVariables();
-      while ( current != null )
-      {
-      	Variable var = ( Variable ) current;
-      	if ( var.last_def == -1 && var.last_use == -1 )
-      	{
-      		System.out.println( "Upozorenje: Promenljiva " + var.name + 
-      			" je deklarisana, ali se nigde ne koristi." );
-      		warnNo++;
-      	}
-      	else if ( var.last_def > var.last_use )
-      	{
-      		System.out.println( "Upozorenje: Vrednost dodeljena promeljivoj " +
-      		    var.name + " u liniji " + var.last_def + " se nigde ne koristi." );
-      		warnNo++;
-      	}
-      	current = current.next;
-     }
-   }
-   
-   public void syntax_error(Symbol cur_token)
-   {
-   	  
-   }
-   
-   public void report_error(String message, Object info)
-   {
-   	   System.out.print( message );
-   }
-   
-   public int getLine()
-   {
-   	  return (( MPLexer) getScanner()).getLine();
-   }
 :};
 
 init with {:
@@ -85,49 +27,46 @@ terminal Double REALCONST;
 terminal Boolean BOOLCONST;
 
 //Nonterminal symbols
-non terminal Program, Block, Variables, Statements, Statement, IfStatement;
-non terminal ElsePart, ElifList, Elif, ElseStatement, RelOp, Assignment;
-non terminal TypeNode Type, RelExpression;
+non terminal Block Program, Block;
+non terminal Statement Statement;
+non terminal IfStatement IfStatement;
+non terminal ArrayList Statements, ElsePart, ElifList;
+non terminal ElifStatement Elif;
+non terminal ElseStatement ElseStatement;
+non terminal String RelOp; 
+non terminal Assignment Assignment;
+non terminal RelExpression RelExpression;
+non terminal TypeNode Type;
 non terminal Constant Const;
-non terminal SymbolNode Term;
+non terminal Expression Term;
 non terminal Variable Variable;
-non terminal ScopeStart;
-non terminal ScopeEnd;
 
-
-
+// others
+non terminal Variables;
 
 //Grammar
-Program ::= MAIN LEFTPAR RIGHTPAR Block;
-
-Block ::= ScopeStart Variables Statements ScopeEnd;
-             
-ScopeStart ::= LEFTCURLY
+Program ::= MAIN LEFTPAR RIGHTPAR Block: b
 {:
-	parser.symbolTable.addScope();
+	RESULT = b;
 :};
 
-ScopeEnd ::= RIGHTCURLY
+Block ::= LEFTCURLY Variables Statements:stmts RIGHTCURLY 
 {:
-	parser.symbolTable.exitScope();
+	Block a = new Block();
+	for (Object stmt : stmts)
+		a.addStatement((Statement)stmt);
+
+	RESULT = a;
 :};
 
-Variables ::= Variables Variable:var 
+Variables ::= Variables Variable:var
 {:
-	if (!parser.symbolTable.addVar(var.name, var.type)) {
-		System.out.println(parser.getLine() + ": Promenljiva " + var.name 
-			+ " je vec deklarisana");
-		parser.errNo++; 
-	}
+	parser.symbolTable.addVar(var.name, var.type);
 :}
 
 | Variable:var
 {:
-	if (!parser.symbolTable.addVar(var.name, var.type)) {
-		System.out.println(parser.getLine() + ": Promenljiva " + var.name 
-			+ " je vec deklarisana");
-		parser.errNo++; 
-	}
+	parser.symbolTable.addVar(var.name, var.type);
 :};
 
 Variable ::= Type:t ID:name SEMICOLON
@@ -150,114 +89,114 @@ Type ::= INT
 	RESULT = parser.symbolTable.getType("boolean");
 :};
 
-Statements ::= Statements SEMICOLON Statement 
-		   | Statement
-		   ;
-
-Statement ::= Assignment
-		  | IfStatement
- 	 	  ;
-
-IfStatement ::= IF LEFTPAR RelExpression:reType RIGHTPAR COLON Block ElsePart 
+Statements ::= Statements:stmts SEMICOLON Statement:statement
 {:
-	if (reType.tkind != TypeNode.BOOLEAN) {
-		System.out.println(parser.getLine() +
-			": izraz u IF mora biti tipa Boolean");
-		parser.errNo++; 
-	}
-:};
+	stmts.add(statement);
+	RESULT = stmts;
+:} 
 
-ElsePart ::= ElifList
-         | ElseStatement 
-         | 
-         ;
-
-ElifList ::= ElifList Elif
-         | Elif 
-         | ElifList ElseStatement
-         ;
-
-Elif ::= ELIF LEFTPAR RelExpression:reType RIGHTPAR COLON Block
+| Statement:statement
 {:
-	if (reType.tkind != TypeNode.BOOLEAN) {
-		System.out.println(parser.getLine() +
-			": izraz u ELIF mora biti tipa Boolean");
-		parser.errNo++; 
-	}
-:};
+	ArrayList stmts = new ArrayList();
+	stmts.add(statement);
+	RESULT = stmts;
+:}
+;
 
-ElseStatement ::= ELSE COLON Block;
-
-RelExpression ::= Term:t1 RelOp Term:t2 
+Statement ::= Assignment: assignmentStatement
 {:
-	int realTkind = parser.symbolTable.getType("real").tkind;
-	int intTkind = parser.symbolTable.getType("integer").tkind; 
-	if (t1.kind == SymbolNode.VARIABLE) {
-		Variable var1 = parser.symbolTable.getVar(t1.name);
-		if (var1 == null) {
-			System.out.println(parser.getLine() + ": Promenljiva " + t1.name 
-				+ " nije deklarisana");
-			parser.errNo++; 
-		} else if (var1.value == null) {
-			System.out.println(parser.getLine() + ": Promenljiva " + var1.name 
-				+ " nije inicijalizovana");
-			parser.errNo++; 
-		} else if (var1.type.tkind != realTkind 
-						&& var1.type.tkind != intTkind) {
-			System.out.println(parser.getLine() + ": Promenljiva " + var1.name 
-				+ " mora biti numerickog tipa da bi se primenio relacioni operator");
-			parser.errNo++; 
+	RESULT = assignmentStatement;
+:}
+
+| IfStatement: ifStatement
+{:
+	RESULT = ifStatement;
+:}
+;
+
+IfStatement ::= IF LEFTPAR RelExpression:reExp RIGHTPAR COLON Block:b ElsePart:elsePart
+{:
+	ElseStatement elseStatement = null;
+	ArrayList<ElifStatement> elifStatements = new ArrayList<ElifStatement>();
+	if (elsePart != null) {
+		for (Object part : elsePart) {
+			if (part instanceof ElseStatement)
+				elseStatement = (ElseStatement)part;
+			else 
+				elifStatements.add((ElifStatement)part);
 		}
 	}
-	if (t2.kind == SymbolNode.VARIABLE) {
-		Variable var1 = parser.symbolTable.getVar(t2.name);
-		if (var1 == null) {
-			System.out.println(parser.getLine() + ": Promenljiva " + t2.name 
-				+ " nije deklarisana");
-			parser.errNo++; 
-		} else if (var1.value == null) {
-			System.out.println(parser.getLine() + ": Promenljiva " + var1.name 
-				+ " nije inicijalizovana");
-			parser.errNo++; 
-		} else if (var1.type.tkind != realTkind 
-						&& var1.type.tkind != intTkind) {
-			System.out.println(parser.getLine() + ": Promenljiva " + var1.name 
-				+ " mora biti numerickog tipa da bi se primenio relacioni operator");
-			parser.errNo++; 
-		}
-	}
-	RESULT = parser.symbolTable.getType("boolean");
+	IfStatement ifStmt = new IfStatement(reExp, b, elifStatements, elseStatement);
+	RESULT = ifStmt;
+:};
+
+ElsePart ::= ElifList:elifList
+{:
+	RESULT = elifList;
+:}
+
+| ElseStatement:elseStatement
+{:
+	ArrayList withOnlyElseStatement = new ArrayList();
+	withOnlyElseStatement.add(elseStatement);
+	RESULT = withOnlyElseStatement;
+:}
+ 
+|
+{:
+	RESULT = null;
+:} 
+;
+
+ElifList ::= ElifList:elifList Elif:elif
+{:
+	elifList.add(elif);
+	RESULT = elifList;
+:}
+
+| Elif:elif
+{:
+	ArrayList elifList = new ArrayList();
+	elifList.add(elif);
+	RESULT = elifList;
+:} 
+
+| ElifList:elifList ElseStatement:elseStatement
+{:
+	elifList.add(elseStatement);
+	RESULT = elifList;
+:}
+;
+
+Elif ::= ELIF LEFTPAR RelExpression:reExp RIGHTPAR COLON Block:b
+{:
+	RESULT = new ElifStatement(reExp, b);
+:};
+
+ElseStatement ::= ELSE COLON Block:b
+{:
+	RESULT = new ElseStatement(b);
+:};
+
+RelExpression ::= Term:t1 RelOp:opCode Term:t2 
+{:
+	RESULT = new RelExpression(t1, t2, opCode);
 :}
 
 | Term:t1
 {:
-	if (t1.kind == SymbolNode.VARIABLE) {
-		Variable var1 = parser.symbolTable.getVar(t1.name);
-		if (var1 == null) {
-			System.out.println(parser.getLine() + ": Promenljiva " + t1.name 
-				+ " nije deklarisana");
-			parser.errNo++; 
-		} else if (var1.value == null) {
-			System.out.println(parser.getLine() + ": Promenljiva " + var1.name 
-				+ " nije inicijalizovana");
-			parser.errNo++; 
-		}
-	}
-	RESULT = t1.type;
+	RESULT = new RelExpression(t1);
 :};
 
 Term ::= ID:name
 {:
 	Variable var = parser.symbolTable.getVar(name);
-	if (var != null)
-		RESULT = var;
-	else
-		RESULT = new Variable(name, null, null);
+	RESULT = new VariableExpression(var);
 :}
 
 | Const:c
 {:
-	RESULT = c;
+	RESULT = new ConstantExpression(c);
 :};
 
 Const ::= INTCONST:c
@@ -276,57 +215,40 @@ Const ::= INTCONST:c
 :};
 
 RelOp ::= LESS
-      | LESSEQ
-      | EQ 
-      | NOTEQ 
-      | GREATER 
-      | GREATEREQ 
+{:
+	RESULT = "Compare_Less";
+:}
+
+| LESSEQ
+{:
+	RESULT = "Compare_Less_Or_Equal";
+:}
+
+| EQ 
+{:
+	RESULT = "Compare_Equal";
+:}
+
+| NOTEQ 
+{:
+	RESULT = "Compare_Not_Equal";
+:}
+
+| GREATER 
+{:
+	RESULT = "Compare_Greater";
+:}
+
+| GREATEREQ 
+{:
+	RESULT = "Compare_Greater_Or_Equal";
+:}
       ;
 
 Assignment ::= ID:name ASSIGN Term:term
 {:
 	Variable var = parser.symbolTable.getVar(name);
-	if (var == null) {
-		System.out.println(parser.getLine() + ": Promenljiva " + name 
-			+ " nije deklarisana");
-		parser.errNo++; 
-	}
-	if (term.kind == SymbolNode.VARIABLE) {
-		Variable var1 = parser.symbolTable.getVar(term.name);
-		if (var1 == null) {
-			System.out.println(parser.getLine() + ": Promenljiva " + term.name 
-				+ " nije deklarisana");
-			parser.errNo++; 
-		} else if (var1.value == null) {
-			System.out.println(parser.getLine() + ": Promenljiva " + var1.name 
-				+ " nije inicijalizovana");
-			parser.errNo++; 
-		} else if (var != null) {
-			TypeNode varType = var.type;
-			TypeNode var1Type = var1.type;
-			if (varType.tkind == parser.symbolTable.getType("real").tkind
-					&& var1Type.tkind == parser.symbolTable.getType("integer").tkind
-				|| varType.tkind == var1Type.tkind)
-				var.value = var1.value;
-			else {
-				System.out.println(parser.getLine() + ": Promenljive " + var.name
-					+ " i " + var1.name + " moraju biti istog tipa");
-				parser.errNo++; 
-			}
-		}
-	} else if (var != null && term.kind == SymbolNode.CONSTANT) {
-		TypeNode varType = var.type;
-		TypeNode constType = term.type;
-		if (varType.tkind == parser.symbolTable.getType("real").tkind
-				&& constType.tkind == parser.symbolTable.getType("integer").tkind
-			|| varType.tkind == constType.tkind)
-			var.value = ((Constant)term).value;
-		else {
-			System.out.println(parser.getLine() + ": Promenljive " + var.name
-				+ " i " + term.name + " moraju biti istog tipa");
-			parser.errNo++; 
-		}
-	}
+	RESULT = new Assignment(var, term);
 :};
 
 

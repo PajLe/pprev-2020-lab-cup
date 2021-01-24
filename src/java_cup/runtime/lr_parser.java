@@ -137,7 +137,7 @@ public abstract class lr_parser {
   /** The default number of Symbols after an error we much match to consider 
    *  it recovered from. 
    */
-  protected final static int _error_sync_size = 3;
+  protected final static int _error_sync_size = 1;
 
   /*. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .*/
 
@@ -837,58 +837,27 @@ public abstract class lr_parser {
    * @param debug should we produce debugging messages as we parse.
    */
   protected boolean error_recovery(boolean debug)
-    throws java.lang.Exception
-    {
-      if (debug) debug_message("# Attempting error recovery");
-
-      /* first pop the stack back into a state that can shift on error and 
-	 do that shift (if that fails, we fail) */
-      if (!find_recovery_config(debug))
+  throws Exception
+  
 	{
-	  if (debug) debug_message("# Error recovery fails");
-	  return false;
+		if (debug) debug_message("# Attempting error recovery");
+
+		/* first pop the stack back into a state that can shift on error and 
+	   do that shift (if that fails, we fail) */
+		if (!find_recovery_config(debug))
+		{
+			if (debug) debug_message("# Error recovery fails");
+			return false;
+		}
+
+		/* read ahead to create lookahead we can parse multiple times */
+		read_lookahead();
+
+		if (!try_parse_ahead(debug))
+			this.cur_token = scan();
+		return true;
 	}
 
-      /* read ahead to create lookahead we can parse multiple times */
-      read_lookahead();
-
-      /* repeatedly try to parse forward until we make it the required dist */
-      for (;;)
-	{
-	  /* try to parse forward, if it makes it, bail out of loop */
-	  if (debug) debug_message("# Trying to parse ahead");
-	  if (try_parse_ahead(debug))
-	    {
-	      break;
-	    }
-
-	  /* if we are now at EOF, we have failed */
-	  if (lookahead[0].sym == EOF_sym()) 
-	    {
-	      if (debug) debug_message("# Error recovery fails at EOF");
-	      return false;
-	    }
-
-	  /* otherwise, we consume another Symbol and try again */
-	  // BUG FIX by Bruce Hutton
-	  // Computer Science Department, University of Auckland,
-	  // Auckland, New Zealand.
-	  // It is the first token that is being consumed, not the one 
-	  // we were up to parsing
-	  if (debug) 
-	      debug_message("# Consuming Symbol #" + lookahead[ 0 ].sym);
-	  restart_lookahead();
-	}
-
-      /* we have consumed to a point where we can parse forward */
-      if (debug) debug_message("# Parse-ahead ok, going back to normal parse");
-
-      /* do the real parse (including actions) across the lookahead */
-      parse_lookahead(debug);
-
-      /* we have success */
-      return true;
-    }
 
   /*. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .*/
 
@@ -898,7 +867,7 @@ public abstract class lr_parser {
   protected boolean shift_under_error()
     {
       /* is there a shift under error Symbol */
-      return get_action(((Symbol)stack.peek()).parse_state, error_sym()) > 0;
+      return get_action(((Symbol)stack.peek()).parse_state, error_sym()) != 0;
     }
 
   /*. . . . . . . . . . . . . . . . . . . . . . . . . . . . . .*/
@@ -910,7 +879,7 @@ public abstract class lr_parser {
    *
    * @param debug should we produce debugging messages as we parse.
    */
-  protected boolean find_recovery_config(boolean debug)
+  protected boolean find_recovery_config(boolean debug) throws Exception
     {
       Symbol error_token;
       int act;
@@ -948,10 +917,42 @@ public abstract class lr_parser {
 	  debug_message("# Shifting on error to state #" + (act-1));
 	}
 
+//    SS
+	  while ( act < 0 )
+	  {
+		  Symbol lhs_sym = null;
+		  short handle_size, lhs_sym_num;
+		  /* perform the action for the reduce */
+		  lhs_sym = do_action((-act)-1, this, stack, tos);
+
+		  /* look up information about the production */
+		  lhs_sym_num = production_tab[(-act)-1][0];
+		  handle_size = production_tab[(-act)-1][1];
+
+		  /* pop the handle off the stack */
+		  for (int i = 0; i < handle_size; i++)
+		  {
+			  stack.pop();
+			  tos--;
+		  }
+	      
+		  /* look up the state to go to from the one popped back to */
+		  act = get_reduce(((Symbol)stack.peek()).parse_state, lhs_sym_num);
+
+		  /* shift to that state */
+		  lhs_sym.parse_state = act;
+		  lhs_sym.used_by_parser = true;
+		  stack.push(lhs_sym);
+		  tos++;
+		  act = get_action(((Symbol)stack.peek()).parse_state, error_sym());
+	  }
+//end SS
+
       /* build and shift a special error Symbol */
       error_token = new Symbol(error_sym(), left_pos, right_pos);
       error_token.parse_state = act-1;
       error_token.used_by_parser = true;
+      error_token.value = cur_token.value;
       stack.push(error_token);
       tos++;
 
@@ -980,7 +981,7 @@ public abstract class lr_parser {
       for (int i = 0; i < error_sync_size(); i++)
 	{
 	  lookahead[i] = cur_token;
-	  cur_token = scan();
+//	  cur_token = scan();
 	}
 
       /* start at the beginning */
@@ -1022,8 +1023,9 @@ public abstract class lr_parser {
       // Computer Science Department, University of Auckland,
       // Auckland, New Zealand. [applied 5-sep-1999 by csa]
       // The following two lines were out of order!!
-      lookahead[error_sync_size()-1] = cur_token;
       cur_token = scan();
+      lookahead[error_sync_size()-1] = cur_token;
+      //cur_token = scan();
 
       /* reset our internal position marker */
       lookahead_pos = 0;

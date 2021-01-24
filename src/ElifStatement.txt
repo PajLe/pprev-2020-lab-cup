@@ -1,0 +1,6 @@
+	IMC<e>
+	Load_Mem R1, REZ<e>
+	JumpIfZero R1, krajElif
+	IMC<blok>
+	Jump {globalEndLabel} // globalEndLabel je prosledjen iz IfStatement i on se nalazi nakon svih elif i else
+krajElif:

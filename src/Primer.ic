@@ -1,0 +1,40 @@
+	Load_Const	R1, 55
+	Store		R1, b
+	Load_Const	R1, 3
+	Store		R1, a
+	Load_Const	R1, 1337
+	Store		R1, c
+	Load_Mem	R1, a
+	Load_Mem	R2, b
+	Compare_Greater_Or_Equal		R1, R2
+	Store		R1, $tmp0
+	Load_Mem	R1, $tmp0
+	JumpIfZero	R1, lab0
+	Load_Mem	R1, a
+	Store		R1, b
+	Jump	lab1
+lab0:
+	Load_Mem	R1, a
+	Load_Mem	R2, c
+	Compare_Less		R1, R2
+	Store		R1, $tmp1
+	Load_Mem	R1, $tmp1
+	JumpIfZero	R1, lab2
+	Load_Mem	R1, a
+	Store		R1, c
+	Jump	lab1
+lab2:
+	Load_Mem	R1, a
+	Load_Mem	R2, c
+	Compare_Equal		R1, R2
+	Store		R1, $tmp2
+	Load_Mem	R1, $tmp2
+	JumpIfZero	R1, lab3
+	Load_Const	R1, 66
+	Store		R1, b
+	Jump	lab1
+lab3:
+	Load_Mem	R1, c
+	Store		R1, b
+
+lab1:

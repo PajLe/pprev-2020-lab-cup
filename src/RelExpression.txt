@@ -1,0 +1,11 @@
+// ako imamo dva operanda:
+	IMC<left>
+	IMC<right>
+	Load_Mem R1, REZ<left>
+	Load_Mem R2, REZ<right>
+	{opCode} R1, R2 // opCode prosledjen kroz konstruktor, odnosi se na relacione operatore
+	Store R1, $tmpx
+
+// ako imamo jedan operand:
+	Load_Mem R1, REZ<left>
+	Store R1, $tmpx

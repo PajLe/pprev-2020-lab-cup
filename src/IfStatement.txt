@@ -1,0 +1,12 @@
+	IMC<e>
+	Load_Mem R1, REZ<e>
+	JumpIfZero R1, lab1
+	IMC<blok>
+	Jump labKraj
+lab1:
+	IMC<elifStatement1>
+	IMC<elifStatement2>
+	...
+	IMC<elifStatementN>
+	IMC<elseStatement>
+labKraj:
